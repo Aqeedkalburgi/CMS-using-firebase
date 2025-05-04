@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Management System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(180deg, #e0e0e0, #f5f5f5);
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            background-color: #28a745;
+            height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        .sidebar a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .sidebar a:hover {
+            background-color: #218838;
+        }
+        .sidebar a.disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        .sidebar img {
+            width: 30px;
+            margin-right: 10px;
+        }
+        .logo {
+            width: 50px;
+            margin-bottom: 20px;
+        }
+        .header {
+            background-color: #fff;
+            padding: 10px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .header .user-info {
+            font-size: 16px;
+            color: #555;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .btn-custom {
+            margin: 5px;
+        }
+        .table th {
+            background-color: #007bff;
+            color: white;
+        }
+        .dashboard-card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-align: center;
+            margin: 10px;
+        }
+        .dashboard-card img {
+            width: 50px;
+            margin-bottom: 10px;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .loading-overlay .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Initial Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <h3>Loading...</h3>
+    </div>
+
+    <!-- Loading Overlay for Firebase Operations -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner-border text-light" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="mainPage">
+        <div class="row m-0">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar">
+                <img src="https://img.icons8.com/ios-filled/50/ffffff/school.png" alt="Logo" class="logo">
+                <a href="#" onclick="showDashboard()" class="sidebar-link disabled"><img src="https://img.icons8.com/ios-filled/30/ffffff/dashboard.png" alt="Dashboard">Dashboard</a>
+                <a href="#" onclick="showTeachers()" class="sidebar-link disabled"><img src="https://img.icons8.com/ios-filled/30/ffffff/teacher.png" alt="Teachers">Teachers</a>
+                <a href="#" onclick="showStudents()" class="sidebar-link disabled"><img src="https://img.icons8.com/ios-filled/30/ffffff/graduation-cap.png" alt="Students">Students</a>
+                <a href="#" onclick="showFees()" class="sidebar-link disabled"><img src="https://img.icons8.com/ios-filled/30/ffffff/money-bag.png" alt="Fees">Fees Deposit</a>
+                <a href="#" onclick="showDepartments()" class="sidebar-link disabled"><img src="https://img.icons8.com/ios-filled/30/ffffff/department.png" alt="Departments">Department</a>
+                <a href="#" onclick="logout()" class="sidebar-link disabled"><img src="https://img.icons8.com/ios-filled/30/ffffff/logout-rounded-left.png" alt="Logout">Logout</a>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10">
+                <div class="header">
+                    <h1>College Management System</h1>
+                    <div class="user-info" id="userInfo">Welcome, Guest</div>
+                </div>
+
+                <!-- Dashboard Section -->
+                <div id="dashboardSection" class="container">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="dashboard-card">
+                                <img src="https://img.icons8.com/ios-filled/50/000000/graduation-cap.png" alt="Students">
+                                <h3>Students</h3>
+                                <h2 id="studentCount">00</h2>
+                                <div class="error-message" id="studentError"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="dashboard-card">
+                                <img src="https://img.icons8.com/ios-filled/50/000000/teacher.png" alt="Teachers">
+                                <h3>Teachers</h3>
+                                <h2 id="teacherCount">00</h2>
+                                <div class="error-message" id="teacherError"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="dashboard-card">
+                                <img src="https://img.icons8.com/ios-filled/50/000000/department.png" alt="Departments">
+                                <h3>Departments</h3>
+                                <h2 id="departmentCount">00</h2>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="dashboard-card">
+                                <img src="https://img.icons8.com/ios-filled/50/000000/money-bag.png" alt="Fees">
+                                <h3>Fees Details</h3>
+                                <h2 id="feesCount">00</h2>
+                                <div class="error-message" id="feesError"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teachers Section -->
+                <div id="teachersSection" class="container" style="display: none;">
+                    <div class="card">
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label>Teacher's Name:</label>
+                                <input type="text" class="form-control" id="teacherName">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Gender:</label>
+                                <select class="form-control" id="teacherGender">
+                                    <option>Select Gender</option>
+                                    <option>Male</option>
+                                    <option>Female</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label>DOB:</label>
+                                <input type="date" class="form-control" id="teacherDOB">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Mobile:</label>
+                                <input type="text" class="form-control" id="teacherMobile">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Department:</label>
+                                <select class="form-control" id="teacherDept">
+                                    <option>Civil</option>
+                                    <option>CS</option>
+                                    <option>2</option>
+                                    <option>3</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label>Address:</label>
+                                <input type="text" class="form-control" id="teacherAddress">
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <button class="btn btn-success btn-custom" onclick="saveTeacher()">Save</button>
+                            <button class="btn btn-warning btn-custom" onclick="updateTeacher()">Update</button>
+                            <button class="btn btn-danger btn-custom" onclick="deleteTeacher()">Delete</button>
+                            <button class="btn btn-info btn-custom" onclick="resetTeacher()">Reset</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4 class="text-center">Teachers List</h4>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>TID</th>
+                                    <th>TName</th>
+                                    <th>TGender</th>
+                                    <th>TDOB</th>
+                                    <th>TPhone</th>
+                                    <th>TDept</th>
+                                    <th>TAddress</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teachersTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Students Section -->
+                <div id="studentsSection" class="container" style="display: none;">
+                    <div class="card">
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label>Student's Name:</label>
+                                <input type="text" class="form-control" id="studentName">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Gender:</label>
+                                <select class="form-control" id="studentGender">
+                                    <option>Select Gender</option>
+                                    <option>Male</option>
+                                    <option>Female</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label>DOB:</label>
+                                <input type="date" class="form-control" id="studentDOB">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Mobile:</label>
+                                <input type="text" class="form-control" id="studentMobile">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Department:</label>
+                                <select class="form-control" id="studentDept">
+                                    <option>CS</option>
+                                    <option>Civil</option>
+                                    <option>2</option>
+                                    <option>3</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label>Fees Amt:</label>
+                                <input type="number" class="form-control" id="studentFees">
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <button class="btn btn-danger btn-custom" onclick="showDueList()">Due List</button>
+                            <button class="btn btn-success btn-custom" onclick="saveStudent()">Save</button>
+                            <button class="btn btn-warning btn-custom" onclick="updateStudent()">Update</button>
+                            <button class="btn btn-danger btn-custom" onclick="deleteStudent()">Delete</button>
+                            <button class="btn btn-info btn-custom" onclick="resetStudent()">Reset</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4 class="text-center">Students List</h4>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>StdID</th>
+                                    <th>StdName</th>
+                                    <th>StdGender</th>
+                                    <th>StdDOB</th>
+                                    <th>StdPhone</th>
+                                    <th>StdDept</th>
+                                    <th>StdFees</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Fees Section -->
+                <div id="feesSection" class="container" style="display: none;">
+                    <div class="card">
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label>Student's ID:</label>
+                                <select class="form-control" id="feeStudentID" onchange="updateFeeDetails()">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label>Student's Name:</label>
+                                <input type="text" class="form-control" id="feeStudentName" readonly>
+                            </div>
+                            <div class="col-md-2">
+                                <label>Date:</label>
+                                <input type="date" class="form-control" id="feeDate">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Amount:</label>
+                                <input type="number" class="form-control" id="feeAmount">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <p><strong>Total Fee:</strong> <span id="totalFee">0</span></p>
+                                <p><strong>Deposited Fee:</strong> <span id="depositedFee">0</span></p>
+                            </div>
+                            <div class="col-md-3">
+                                <p><strong>Remaining Fee:</strong> <span id="remainingFee">0</span></p>
+                                <p class="text-danger"><strong>Pending amount:</strong> <span id="pendingAmount">0</span></p>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <button class="btn btn-success btn-custom" onclick="makePayment()">Payment</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4 class="text-center">Payment List</h4>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>FID</th>
+                                    <th>StdID</th>
+                                    <th>StdName</th>
+                                    <th>FDate</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feesTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Departments Section -->
+                <div id="departmentsSection" class="container" style="display: none;">
+                    <div class="card">
+                        <h4 class="text-center">Departments List</h4>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>DeptID</th>
+                                    <th>DeptName</th>
+                                </tr>
+                            </thead>
+                            <tbody id="departmentsTable">
+                                <tr>
+                                    <td>1</td>
+                                    <td>Civil</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>CS</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>Electronics</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCGFJdsIPv_AovLnce4ceaTasTTH8xR3GQ",
+            authDomain: "collegemanagementsystem-da7fa.firebaseapp.com",
+            projectId: "collegemanagementsystem-da7fa",
+            storageBucket: "collegemanagementsystem-da7fa.firebasestorage.app",
+            messagingSenderId: "689141185405",
+            appId: "1:689141185405:web:eed1c24f73aef207096a14",
+            measurementId: "G-DFKT9S6B6F"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Track authentication state resolution
+        let authStateResolved = false;
+        let isAuthenticated = false;
+
+        // Loading overlay functions
+        function showLoadingOverlay() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoadingOverlay() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Enable sidebar links once auth state is resolved
+        function enableSidebar() {
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            sidebarLinks.forEach(link => link.classList.remove('disabled'));
+        }
+
+        // Page Navigation Functions
+        async function showDashboard() {
+            if (!authStateResolved || !isAuthenticated) {
+                return;
+            }
+            try {
+                showLoadingOverlay();
+                document.getElementById('mainPage').style.display = 'block';
+                document.getElementById('dashboardSection').style.display = 'block';
+                document.getElementById('teachersSection').style.display = 'none';
+                document.getElementById('studentsSection').style.display = 'none';
+                document.getElementById('feesSection').style.display = 'none';
+                document.getElementById('departmentsSection').style.display = 'none';
+                document.getElementById('loadingScreen').style.display = 'none';
+                await updateDashboard();
+                window.scrollTo(0, 0);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function showTeachers() {
+            if (!authStateResolved || !isAuthenticated) {
+                return;
+            }
+            try {
+                showLoadingOverlay();
+                document.getElementById('dashboardSection').style.display = 'none';
+                document.getElementById('teachersSection').style.display = 'block';
+                document.getElementById('studentsSection').style.display = 'none';
+                document.getElementById('feesSection').style.display = 'none';
+                document.getElementById('departmentsSection').style.display = 'none';
+                document.getElementById('loadingScreen').style.display = 'none';
+                await loadTeachers();
+                window.scrollTo(0, 0);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function showStudents() {
+            if (!authStateResolved || !isAuthenticated) {
+                return;
+            }
+            try {
+                showLoadingOverlay();
+                document.getElementById('dashboardSection').style.display = 'none';
+                document.getElementById('teachersSection').style.display = 'none';
+                document.getElementById('studentsSection').style.display = 'block';
+                document.getElementById('feesSection').style.display = 'none';
+                document.getElementById('departmentsSection').style.display = 'none';
+                document.getElementById('loadingScreen').style.display = 'none';
+                await loadStudents();
+                window.scrollTo(0, 0);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function showFees() {
+            if (!authStateResolved || !isAuthenticated) {
+                return;
+            }
+            try {
+                showLoadingOverlay();
+                document.getElementById('dashboardSection').style.display = 'none';
+                document.getElementById('teachersSection').style.display = 'none';
+                document.getElementById('studentsSection').style.display = 'none';
+                document.getElementById('feesSection').style.display = 'block';
+                document.getElementById('departmentsSection').style.display = 'none';
+                document.getElementById('loadingScreen').style.display = 'none';
+                await loadFees();
+                window.scrollTo(0, 0);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function showDepartments() {
+            if (!authStateResolved || !isAuthenticated) {
+                return;
+            }
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('teachersSection').style.display = 'none';
+            document.getElementById('studentsSection').style.display = 'none';
+            document.getElementById('feesSection').style.display = 'none';
+            document.getElementById('departmentsSection').style.display = 'block';
+            document.getElementById('loadingScreen').style.display = 'none';
+            hideLoadingOverlay();
+            window.scrollTo(0, 0);
+        }
+
+        // Authentication Functions
+        async function logout() {
+            try {
+                showLoadingOverlay();
+                await auth.signOut();
+                console.log('Logged out successfully');
+                document.getElementById('userInfo').innerText = 'Welcome, Guest';
+                isAuthenticated = false;
+                authStateResolved = false;
+                const sidebarLinks = document.querySelectorAll('.sidebar-link');
+                sidebarLinks.forEach(link => link.classList.add('disabled'));
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Logout failed: ' + error.message);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        // Dashboard Update
+        async function updateDashboard() {
+            document.getElementById('studentError').innerText = '';
+            document.getElementById('teacherError').innerText = '';
+            document.getElementById('feesError').innerText = '';
+
+            try {
+                const studentSnapshot = await db.collection('students').get();
+                document.getElementById('studentCount').innerText = studentSnapshot.size;
+            } catch (error) {
+                console.error('Error updating student count:', error);
+                document.getElementById('studentError').innerText = 'Failed to load: ' + error.message;
+            }
+
+            try {
+                const teacherSnapshot = await db.collection('teachers').get();
+                document.getElementById('teacherCount').innerText = teacherSnapshot.size;
+            } catch (error) {
+                console.error('Error updating teacher count:', error);
+                document.getElementById('teacherError').innerText = 'Failed to load: ' + error.message;
+            }
+
+            try {
+                const feesSnapshot = await db.collection('fees').get();
+                document.getElementById('feesCount').innerText = feesSnapshot.size;
+            } catch (error) {
+                console.error('Error updating fees count:', error);
+                document.getElementById('feesError').innerText = 'Failed to load: ' + error.message;
+            }
+
+            document.getElementById('departmentCount').innerText = 3; // Static for now
+        }
+
+        // Teachers Functions
+        let selectedTeacherId = null;
+
+        async function saveTeacher() {
+            try {
+                showLoadingOverlay();
+                const teacher = {
+                    name: document.getElementById('teacherName').value,
+                    gender: document.getElementById('teacherGender').value,
+                    dob: document.getElementById('teacherDOB').value,
+                    mobile: document.getElementById('teacherMobile').value,
+                    dept: document.getElementById('teacherDept').value,
+                    address: document.getElementById('teacherAddress').value
+                };
+                await db.collection('teachers').add(teacher);
+                alert('Teacher saved!');
+                await loadTeachers();
+                resetTeacher();
+            } catch (error) {
+                console.error('Error saving teacher:', error);
+                alert('Failed to save teacher: ' + error.message);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function loadTeachers() {
+            const table = document.getElementById('teachersTable');
+            table.innerHTML = '';
+            try {
+                const snapshot = await db.collection('teachers').get();
+                snapshot.forEach((doc, index) => {
+                    const teacher = doc.data();
+                    const row = `<tr onclick="selectTeacher('${doc.id}', '${teacher.name}', '${teacher.gender}', '${teacher.dob}', '${teacher.mobile}', '${teacher.dept}', '${teacher.address}')">
+                        <td>${index + 1}</td>
+                        <td>${teacher.name}</td>
+                        <td>${teacher.gender}</td>
+                        <td>${teacher.dob}</td>
+                        <td>${teacher.mobile}</td>
+                        <td>${teacher.dept}</td>
+                        <td>${teacher.address}</td>
+                    </tr>`;
+                    table.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error loading teachers:', error);
+                table.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load teachers: ${error.message}</td></tr>`;
+            }
+        }
+
+        function selectTeacher(id, name, gender, dob, mobile, dept, address) {
+            selectedTeacherId = id;
+            document.getElementById('teacherName').value = name;
+            document.getElementById('teacherGender').value = gender;
+            document.getElementById('teacherDOB').value = dob;
+            document.getElementById('teacherMobile').value = mobile;
+            document.getElementById('teacherDept').value = dept;
+            document.getElementById('teacherAddress').value = address;
+        }
+
+        async function updateTeacher() {
+            if (!selectedTeacherId) return;
+            try {
+                showLoadingOverlay();
+                await db.collection('teachers').doc(selectedTeacherId).update({
+                    name: document.getElementById('teacherName').value,
+                    gender: document.getElementById('teacherGender').value,
+                    dob: document.getElementById('teacherDOB').value,
+                    mobile: document.getElementById('teacherMobile').value,
+                    dept: document.getElementById('teacherDept').value,
+                    address: document.getElementById('teacherAddress').value
+                });
+                alert('Teacher updated!');
+                await loadTeachers();
+                resetTeacher();
+            } catch (error) {
+                console.error('Error updating teacher:', error);
+                alert('Failed to update teacher: ' + error.message);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function deleteTeacher() {
+            if (!selectedTeacherId) return;
+            try {
+                showLoadingOverlay();
+                await db.collection('teachers').doc(selectedTeacherId).delete();
+                alert('Teacher deleted!');
+                await loadTeachers();
+                resetTeacher();
+            } catch (error) {
+                console.error('Error deleting teacher:', error);
+                alert('Failed to delete teacher: ' + error.message);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function resetTeacher() {
+            selectedTeacherId = null;
+            document.getElementById('teacherName').value = '';
+            document.getElementById('teacherGender').value = 'Select Gender';
+            document.getElementById('teacherDOB').value = '';
+            document.getElementById('teacherMobile').value = '';
+            document.getElementById('teacherDept').value = 'Civil';
+            document.getElementById('teacherAddress').value = '';
+        }
+
+        // Students Functions
+        let selectedStudentId = null;
+
+        async function saveStudent() {
+            try {
+                showLoadingOverlay();
+                const student = {
+                    name: document.getElementById('studentName').value,
+                    gender: document.getElementById('studentGender').value,
+                    dob: document.getElementById('studentDOB').value,
+                    mobile: document.getElementById('studentMobile').value,
+                    dept: document.getElementById('studentDept').value,
+                    fees: parseInt(document.getElementById('studentFees').value),
+                    id: parseInt(document.getElementById('studentsTable').rows.length + 1)
+                };
+                await db.collection('students').add(student);
+                alert('Student saved!');
+                await loadStudents();
+                resetStudent();
+            } catch (error) {
+                console.error('Error saving student:', error);
+                alert('Failed to save student: ' + error.message);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function loadStudents() {
+            const table = document.getElementById('studentsTable');
+            table.innerHTML = '';
+            try {
+                const snapshot = await db.collection('students').get();
+                snapshot.forEach((doc) => {
+                    const student = doc.data();
+                    const row = `<tr onclick="selectStudent('${doc.id}', '${student.name}', '${student.gender}', '${student.dob}', '${student.mobile}', '${student.dept}', '${student.fees}')">
+                        <td>${student.id}</td>
+                        <td>${student.name}</td>
+                        <td>${student.gender}</td>
+                        <td>${student.dob}</td>
+                        <td>${student.mobile}</td>
+                        <td>${student.dept}</td>
+                        <td>${student.fees}</td>
+                    </tr>`;
+                    table.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error loading students:', error);
+                table.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load students: ${error.message}</td></tr>`;
+            }
+        }
+
+        function selectStudent(id, name, gender, dob, mobile, dept, fees) {
+            selectedStudentId = id;
+            document.getElementById('studentName').value = name;
+            document.getElementById('studentGender').value = gender;
+            document.getElementById('studentDOB').value = dob;
+            document.getElementById('studentMobile').value = mobile;
+            document.getElementById('studentDept').value = dept;
+            document.getElementById('studentFees').value = fees;
+        }
+
+        async function updateStudent() {
+            if (!selectedStudentId) return;
+            try {
+                showLoadingOverlay();
+                await db.collection('students').doc(selectedStudentId).update({
+                    name: document.getElementById('studentName').value,
+                    gender: document.getElementById('studentGender').value,
+                    dob: document.getElementById('studentDOB').value,
+                    mobile: document.getElementById('studentMobile').value,
+                    dept: document.getElementById('studentDept').value,
+                    fees: parseInt(document.getElementById('studentFees').value)
+                });
+                alert('Student updated!');
+                await loadStudents();
+                resetStudent();
+            } catch (error) {
+                console.error('Error updating student:', error);
+                alert('Failed to update student: ' + error.message);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function deleteStudent() {
+            if (!selectedStudentId) return;
+            try {
+                showLoadingOverlay();
+                await db.collection('students').doc(selectedStudentId).delete();
+                alert('Student deleted!');
+                await loadStudents();
+                resetStudent();
+            } catch (error) {
+                console.error('Error deleting student:', error);
+                alert('Failed to delete student: ' + error.message);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function resetStudent() {
+            selectedStudentId = null;
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentGender').value = 'Select Gender';
+            document.getElementById('studentDOB').value = '';
+            document.getElementById('studentMobile').value = '';
+            document.getElementById('studentDept').value = 'CS';
+            document.getElementById('studentFees').value = '';
+        }
+
+        async function showDueList() {
+            alert('Due List: Check console for details.');
+            console.log('Students with pending fees:');
+            try {
+                showLoadingOverlay();
+                const snapshot = await db.collection('students').get();
+                for (const doc of snapshot.docs) {
+                    const student = doc.data();
+                    try {
+                        const feeSnapshot = await db.collection('fees').where('studentId', '==', student.id.toString()).get();
+                        let totalPaid = 0;
+                        feeSnapshot.forEach((feeDoc) => {
+                            totalPaid += parseInt(feeDoc.data().amount);
+                        });
+                        const remaining = student.fees - totalPaid;
+                        if (remaining > 0) {
+                            console.log(`${student.name}: Remaining Fee: ${remaining}`);
+                        }
+                    } catch (error) {
+                        console.error(`Error calculating due fees for ${student.name}:`, error);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading students for due list:', error);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        // Fees Functions
+        async function updateFeeDetails() {
+            const studentId = document.getElementById('feeStudentID').value;
+            try {
+                showLoadingOverlay();
+                const snapshot = await db.collection('students').where('id', '==', parseInt(studentId)).get();
+                if (!snapshot.empty) {
+                    const student = snapshot.docs[0].data();
+                    document.getElementById('feeStudentName').value = student.name;
+                    document.getElementById('totalFee').innerText = student.fees;
+                    try {
+                        const feeSnapshot = await db.collection('fees').where('studentId', '==', studentId).get();
+                        let totalPaid = 0;
+                        feeSnapshot.forEach((doc) => {
+                            totalPaid += parseInt(doc.data().amount);
+                        });
+                        document.getElementById('depositedFee').innerText = totalPaid;
+                        document.getElementById('remainingFee').innerText = student.fees - totalPaid;
+                        document.getElementById('pendingAmount').innerText = student.fees - totalPaid;
+                    } catch (error) {
+                        console.error('Error calculating fees:', error);
+                        document.getElementById('remainingFee').innerText = 'Error';
+                        document.getElementById('pendingAmount').innerText = 'Error';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading student for fees:', error);
+                document.getElementById('feeStudentName').value = 'Error';
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function makePayment() {
+            try {
+                showLoadingOverlay();
+                const payment = {
+                    studentId: document.getElementById('feeStudentID').value,
+                    studentName: document.getElementById('feeStudentName').value,
+                    date: document.getElementById('feeDate').value,
+                    amount: document.getElementById('feeAmount').value,
+                    id: parseInt(document.getElementById('feesTable').rows.length + 1)
+                };
+                await db.collection('fees').add(payment);
+                alert('Payment recorded!');
+                await loadFees();
+                await updateFeeDetails();
+                document.getElementById('feeAmount').value = '';
+            } catch (error) {
+                console.error('Error recording payment:', error);
+                alert('Failed to record payment: ' + error.message);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function loadFees() {
+            const table = document.getElementById('feesTable');
+            table.innerHTML = '';
+            try {
+                const snapshot = await db.collection('fees').get();
+                snapshot.forEach((doc) => {
+                    const fee = doc.data();
+                    const row = `<tr>
+                        <td>${fee.id}</td>
+                        <td>${fee.studentId}</td>
+                        <td>${fee.studentName}</td>
+                        <td>${fee.date}</td>
+                        <td>${fee.amount}</td>
+                    </tr>`;
+                    table.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error loading fees:', error);
+                table.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Failed to load fees: ${error.message}</td></tr>`;
+            }
+        }
+
+        // Initial Load with Loading Screen
+        auth.onAuthStateChanged((user) => {
+            authStateResolved = true;
+            if (user) {
+                console.log('User is logged in:', user);
+                isAuthenticated = true;
+                document.getElementById('userInfo').innerText = `Welcome, ${user.email}`;
+                enableSidebar();
+                showDashboard();
+            } else {
+                console.log('No user is logged in');
+                isAuthenticated = false;
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Fallback in case auth state takes too long
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (!authStateResolved) {
+                    authStateResolved = true;
+                    window.location.href = 'login.html';
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
