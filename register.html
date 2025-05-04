@@ -9,22 +9,99 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(180deg, #e0e0e0, #f5f5f5);
-            height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #00c4b4, #007bff);
+            min-height: 100vh;
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
         }
-        .card {
-            background-color: #fff;
+        .register-container {
+            max-width: 450px;
+            width: 100%;
+            padding: 15px;
+        }
+        .register-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px 30px;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .register-card h3 {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+        .form-group i {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            color: #00c4b4;
+            font-size: 18px;
+        }
+        .form-control {
+            padding-left: 45px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px;
-            width: 400px;
+            border: 1px solid #ddd;
+            height: 50px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #00c4b4;
+            box-shadow: 0 0 8px rgba(0, 196, 180, 0.2);
+            outline: none;
+        }
+        .btn-success {
+            background: #00c4b4;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-success:hover {
+            background: #009c92;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 196, 180, 0.4);
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+        .success-message {
+            color: #28a745;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
         }
         .loading-overlay {
             position: fixed;
@@ -32,39 +109,72 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 999;
+            z-index: 1000;
         }
         .loading-overlay .spinner-border {
             width: 3rem;
             height: 3rem;
+            color: #fff;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .login-link a {
+            color: #00c4b4;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 576px) {
+            .register-card {
+                padding: 30px 20px;
+            }
+            .form-control {
+                height: 45px;
+            }
+            .btn-success {
+                padding: 10px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">
-        <div class="spinner-border text-light" role="status">
+        <div class="spinner-border" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 
-    <!-- Register Form -->
-    <div class="card">
-        <h3 class="text-center mb-4">Register</h3>
-        <div class="mb-3">
-            <label for="registerEmail" class="form-label">Email</label>
-            <input type="email" class="form-control" id="registerEmail" placeholder="Enter email">
+    <!-- Register Container -->
+    <div class="register-container">
+        <div class="register-card">
+            <h3>Create an Account</h3>
+            <div class="form-group">
+                <i class="fas fa-envelope"></i>
+                <input type="email" class="form-control" id="registerEmail" placeholder="Email Address" required>
+            </div>
+            <div class="form-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" class="form-control" id="registerPassword" placeholder="Password" required>
+            </div>
+            <button class="btn btn-success" onclick="register()">Register</button>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+            <div class="login-link">
+                Already have an account? <a href="login.html">Login here</a>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="registerPassword" class="form-label">Password</label>
-            <input type="password" class="form-control" id="registerPassword" placeholder="Enter password">
-        </div>
-        <button class="btn btn-success w-100" onclick="register()">Register</button>
-        <p class="text-center mt-3">Already have an account? <a href="login.html">Login</a></p>
     </div>
 
     <!-- Bootstrap JS -->
@@ -86,6 +196,12 @@
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
+        // DOM Elements
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const registerEmail = document.getElementById('registerEmail');
+        const registerPassword = document.getElementById('registerPassword');
+
         // Loading overlay functions
         function showLoadingOverlay() {
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -95,19 +211,47 @@
             document.getElementById('loadingOverlay').style.display = 'none';
         }
 
+        // Show Error Message
+        function showError(message) {
+            errorMessage.style.display = 'block';
+            errorMessage.innerText = message;
+            successMessage.style.display = 'none';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // Show Success Message
+        function showSuccess(message) {
+            successMessage.style.display = 'block';
+            successMessage.innerText = message;
+            errorMessage.style.display = 'none';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+                window.location.href = 'login.html';
+            }, 2000);
+        }
+
         // Register Function
         async function register() {
+            const email = registerEmail.value.trim();
+            const password = registerPassword.value.trim();
+            if (!email || !password) {
+                showError('Please enter both email and password.');
+                return;
+            }
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters long.');
+                return;
+            }
             try {
                 showLoadingOverlay();
-                const email = document.getElementById('registerEmail').value;
-                const password = document.getElementById('registerPassword').value;
                 await auth.createUserWithEmailAndPassword(email, password);
                 console.log('Registration successful');
-                alert('Registration successful!');
-                window.location.href = 'login.html';
+                showSuccess('Registration successful! Redirecting to login...');
             } catch (error) {
                 console.error('Registration error:', error);
-                alert('Registration failed: ' + error.message);
+                showError('Registration failed: ' + error.message);
             } finally {
                 hideLoadingOverlay();
             }
@@ -117,6 +261,18 @@
         auth.onAuthStateChanged((user) => {
             if (user) {
                 window.location.href = 'index.html';
+            }
+        });
+
+        // Form Validation on Input
+        registerEmail.addEventListener('input', () => {
+            if (errorMessage.style.display === 'block') {
+                errorMessage.style.display = 'none';
+            }
+        });
+        registerPassword.addEventListener('input', () => {
+            if (errorMessage.style.display === 'block') {
+                errorMessage.style.display = 'none';
             }
         });
     </script>
