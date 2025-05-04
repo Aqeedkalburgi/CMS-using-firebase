@@ -9,22 +9,92 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(180deg, #e0e0e0, #f5f5f5);
-            height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #007bff, #00c4b4);
+            min-height: 100vh;
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
         }
-        .card {
-            background-color: #fff;
+        .login-container {
+            max-width: 450px;
+            width: 100%;
+            padding: 15px;
+        }
+        .login-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px 30px;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .login-card h3 {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+        .form-group i {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            color: #007bff;
+            font-size: 18px;
+        }
+        .form-control {
+            padding-left: 45px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px;
-            width: 400px;
+            border: 1px solid #ddd;
+            height: 50px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+            outline: none;
+        }
+        .btn-primary {
+            background: #007bff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
         }
         .loading-overlay {
             position: fixed;
@@ -32,39 +102,71 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 999;
+            z-index: 1000;
         }
         .loading-overlay .spinner-border {
             width: 3rem;
             height: 3rem;
+            color: #fff;
+        }
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .register-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 576px) {
+            .login-card {
+                padding: 30px 20px;
+            }
+            .form-control {
+                height: 45px;
+            }
+            .btn-primary {
+                padding: 10px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">
-        <div class="spinner-border text-light" role="status">
+        <div class="spinner-border" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 
-    <!-- Login Form -->
-    <div class="card">
-        <h3 class="text-center mb-4">Login</h3>
-        <div class="mb-3">
-            <label for="loginEmail" class="form-label">Email</label>
-            <input type="email" class="form-control" id="loginEmail" placeholder="Enter email">
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="login-card">
+            <h3>Login to CMS</h3>
+            <div class="form-group">
+                <i class="fas fa-envelope"></i>
+                <input type="email" class="form-control" id="loginEmail" placeholder="Email Address" required>
+            </div>
+            <div class="form-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" class="form-control" id="loginPassword" placeholder="Password" required>
+            </div>
+            <button class="btn btn-primary" onclick="login()">Login</button>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="register-link">
+                Don't have an account? <a href="register.html">Register here</a>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="loginPassword" class="form-label">Password</label>
-            <input type="password" class="form-control" id="loginPassword" placeholder="Enter password">
-        </div>
-        <button class="btn btn-primary w-100" onclick="login()">Login</button>
-        <p class="text-center mt-3">Don't have an account? <a href="register.html">Register</a></p>
     </div>
 
     <!-- Bootstrap JS -->
@@ -86,6 +188,11 @@
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
+        // DOM Elements
+        const errorMessage = document.getElementById('errorMessage');
+        const loginEmail = document.getElementById('loginEmail');
+        const loginPassword = document.getElementById('loginPassword');
+
         // Loading overlay functions
         function showLoadingOverlay() {
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -95,12 +202,21 @@
             document.getElementById('loadingOverlay').style.display = 'none';
         }
 
+        // Show Error Message
+        function showError(message) {
+            errorMessage.style.display = 'block';
+            errorMessage.innerText = message;
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
         // Login Function
         async function login() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+            const email = loginEmail.value.trim();
+            const password = loginPassword.value.trim();
             if (!email || !password) {
-                alert('Please enter both email and password.');
+                showError('Please enter both email and password.');
                 return;
             }
             try {
@@ -110,7 +226,7 @@
                 window.location.href = 'index.html';
             } catch (error) {
                 console.error('Login error:', error);
-                alert('Login failed: ' + error.message);
+                showError('Login failed: ' + error.message);
             } finally {
                 hideLoadingOverlay();
             }
@@ -120,6 +236,18 @@
         auth.onAuthStateChanged((user) => {
             if (user) {
                 window.location.href = 'index.html';
+            }
+        });
+
+        // Form Validation on Input
+        loginEmail.addEventListener('input', () => {
+            if (errorMessage.style.display === 'block') {
+                errorMessage.style.display = 'none';
+            }
+        });
+        loginPassword.addEventListener('input', () => {
+            if (errorMessage.style.display === 'block') {
+                errorMessage.style.display = 'none';
             }
         });
     </script>
